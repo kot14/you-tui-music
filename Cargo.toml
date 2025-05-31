@@ -42,6 +42,7 @@ tracing = "0.1.40"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter", "serde"] }
 rodio = "0.17"
+symphonia = { version = "0.5", features = ["mp3", "flac", "wav", "vorbis", "aac", "isomp4"] }
 
 [build-dependencies]
 anyhow = "1.0.90"

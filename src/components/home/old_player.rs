@@ -4,13 +4,13 @@ use std::sync::{Arc, Mutex};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use ratatui::{widgets::*, layout::*, style::*, text::*, Frame};
 
-pub struct Player {
+pub struct Old_Player {
     sink: Option<Arc<Mutex<Sink>>>,
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
 }
 
-impl Player {
+impl Old_Player {
     pub fn new() -> Self {
         let (_stream, stream_handle) = OutputStream::try_default().expect("Failed to init audio");
         Self {
