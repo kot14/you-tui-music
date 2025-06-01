@@ -21,6 +21,8 @@ pub struct Player {
     position: Duration,
     duration: Duration,
     playback_start_time: Option<Instant>,
+    pub finished: bool,
+    paused: bool,
     sink: Option<Arc<Mutex<Sink>>>,
     _stream: Option<OutputStream>,
     stream_handle: Option<OutputStreamHandle>,
@@ -51,9 +53,9 @@ impl Player {
             sink,
             _stream,
             stream_handle,
+             ..Default::default()
         }
     }
-
         fn render_player(&self, frame: &mut Frame, area: Rect) {
         let (title, artist) = self.current_track.clone().unwrap_or_else(|| ("Невідомо".into(), "Невідомо".into()));
         let position_secs = self.position.as_secs();
@@ -65,17 +67,17 @@ impl Player {
 
         let text = Text::from(vec![
             Line::from(vec![
-                Span::raw("Playing (pavilion "),
-                Span::raw(" | Shuffle: On "),
+                Span::raw("Playing ("),
+                Span::raw(" Shuffle: On "),
                 Span::raw(" | Repeat: Off "),
-                Span::raw(" | Volume: 98%)"),
+                Span::raw(" | Volume: 98% )"),
             ]),
             Line::from(""),
             Line::from(vec![
                 Span::styled(&title, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
             ]),
             Line::from(""),
-            Line::from(artist),
+            // Line::from(artist),
             Line::from(""),
             Line::from(vec![
                 Span::styled(format_time(position_secs), Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC)),
@@ -125,7 +127,36 @@ let gauge = Gauge::default()
         }
       
     }
-    pub fn play_sample(&mut self, name: &str, ext: &str) {
+
+    pub fn stop(&mut self) {
+        if let Some(sink) = &self.sink {
+            sink.lock().unwrap().stop();
+            self.position = Duration::from_secs(0);
+            self.playback_start_time = None;
+        }
+    }
+
+    // pub fn pause(&mut self) {
+    //     if let Some(sink) = &self.sink {
+    //         if self.paused {
+    //             // Якщо вже на паузі, відновлюємо
+    //             sink.lock().unwrap().play();
+    //             self.playback_start_time = Some(Instant::now());
+    //             self.paused = false;
+    //         } else {
+    //             // Якщо не на паузі, ставимо на паузуs
+    //             self.paused = true;
+    //              sink.lock().unwrap().pause();
+    //              if let Some(start) = self.playback_start_time {
+    //                     self.position += Instant::now().saturating_duration_since(start);
+    //                     self.playback_start_time = None;
+    //                 }
+    //         }
+           
+    //     }
+    // }
+
+    pub fn play_sample(&mut self, name: &str, ext: &str, duration: &u64) {
         // Створюємо шлях до файлу
         let path = format!("local_music/{}.{}", name, ext);
 
@@ -139,13 +170,12 @@ let gauge = Gauge::default()
         if let Ok(file) = File::open(&path) {
             let source = Decoder::new(BufReader::new(file));
             if let Ok(source) = source {
-                let duration = source.total_duration().unwrap_or(Duration::from_secs(0));
                 sink.lock().unwrap().append(source);
 
                 // Оновлюємо внутрішній стан
                 self.current_track = Some((name.to_string(), "Невідомий автор".to_string())); // заміни "Невідомий автор", якщо можеш витягти
                 self.position = Duration::from_secs(0);
-                self.duration = duration;
+                self.duration = Duration::from_secs(*duration);
                 self.playback_start_time = Some(Instant::now());
             }
         } else {
@@ -161,6 +191,7 @@ let gauge = Gauge::default()
                     if let Ok(source) = Decoder::new(reader) {
                         new_sink.append(source);
                         self.sink = Some(Arc::new(Mutex::new(new_sink)));
+                        
                     } else {
                         eprintln!("❌ Не вдалося декодувати: {}", path);
                     }
@@ -194,7 +225,10 @@ impl Component for Player {
                 let now = Instant::now();
                 let elapsed = now.saturating_duration_since(start);
                 self.position = elapsed.min(self.duration);
-}
+               
+}              if self.position >= self.duration && self.duration > Duration::ZERO {
+                self.finished = true; // <-- сигнал
+                }
             }
             Action::Render => {
                 // наприклад, запускати звук якщо потрібно

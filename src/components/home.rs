@@ -1,7 +1,6 @@
 use std::{fs, io, path::Path};
 
 use symphonia::core::{
-    audio::Signal,
     codecs::DecoderOptions,
     formats::FormatOptions,
     meta::MetadataOptions,
@@ -16,8 +15,8 @@ use color_eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, Gauge, List, ListItem, ListState, Paragraph},
-    text::{Line, Span, Text},
+    widgets::{Block, Borders,List, ListItem, ListState},
+    text::{Line, Span, },
 };
 
 use tokio::sync::mpsc::UnboundedSender;
@@ -151,6 +150,34 @@ pub fn get_audio_files(path: &str) -> io::Result<Vec<(String, String, u64)>> {
         format!("{:02}:{:02}", minutes, seconds)
     }
 
+fn next_song(&mut self) {
+    if self.selected_song_index + 1 < self.song_items.len() {
+          self.player.finished = false; // скидаємо
+        self.selected_song_index += 1;
+    } else {
+        self.selected_song_index = 0; // або залишити на останньому
+    }
+     self.player.play_sample(  
+                    &self.song_items[self.selected_song_index].0,
+                    &self.song_items[self.selected_song_index].1,
+                    &self.song_items[self.selected_song_index].2,
+                )
+}
+
+fn prev_song(&mut self) {
+    if self.selected_song_index > 0 {
+          self.player.finished = false; // скидаємо
+        self.selected_song_index -= 1;
+    } else {
+        self.selected_song_index = self.song_items.len() - 1; // або залишити на першому
+    }
+     self.player.play_sample(  
+                    &self.song_items[self.selected_song_index].0,
+                    &self.song_items[self.selected_song_index].1,
+                    &self.song_items[self.selected_song_index].2,
+                );
+            }
+    
 fn handle_list_navigation(&mut self, code: KeyCode) {
     match self.selected_widget {
         0 => {
@@ -181,14 +208,19 @@ fn handle_list_navigation(&mut self, code: KeyCode) {
             match code {
                 KeyCode::Up => self.player.change_volume(true),
                 KeyCode::Down => self.player.change_volume(false),
+                KeyCode::Right => self.next_song(),
+                KeyCode::Left => self.prev_song(),
+                KeyCode::Char('s') => self.player.stop(),
+                // KeyCode::Char(' ') => self.player.pause(),
                 _ => {}
             }
+               
         }
         _ => {}
     }
 }
 
-    fn render_list(&self, frame: &mut Frame, area: Rect) {
+fn render_list(&self, frame: &mut Frame, area: Rect) {
         let mut state = ListState::default();
         state.select(Some(self.selected_index));
 
@@ -201,7 +233,7 @@ fn handle_list_navigation(&mut self, code: KeyCode) {
             .highlight_symbol("➤ ");
 
         frame.render_stateful_widget(list, area, &mut state);
-    }
+}
 
 
 fn render_song_list(&self, frame: &mut Frame, area: Rect) {
@@ -267,13 +299,21 @@ impl Component for Home {
     }
 
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
+        self.player.update(action.clone())?;
+
+         if self.player.finished {
+          
+            self.next_song(); // або будь-яка твоя функція
+        }
+
         match action {
             Action::Key(key) => match key.code {
                 KeyCode::Tab if key.modifiers == KeyModifiers::NONE => self.next_widget(),
-                KeyCode::Up | KeyCode::Down => self.handle_list_navigation(key.code),
+                KeyCode::Up | KeyCode::Down|KeyCode::Right|KeyCode::Left|KeyCode::Char('s')|KeyCode::Char(' ')  => self.handle_list_navigation(key.code),
                 KeyCode::Enter => self.player.play_sample(  
                     &self.song_items[self.selected_song_index].0,
                     &self.song_items[self.selected_song_index].1,
+                    &self.song_items[self.selected_song_index].2,
                 ),
                 _ => {}
             },
