@@ -47,10 +47,10 @@ impl Component for SongList {
     fn update(&mut self, action: Action) -> Result<Option<Action>> {
         match action {
             Action::Tick => {
-                // логіка на кожен тік
+                // logic for each tick
             }
             Action::Render => {
-                // наприклад, запускати звук якщо потрібно
+                // e.g., start sound if needed
             }
             _ => {}
         }
@@ -72,7 +72,7 @@ impl Component for SongList {
 
         let list = List::new(items)
             .block(Block::default()
-                .title("Пісні")
+                .title("Songs") // Translated "Пісні"
                 .borders(Borders::ALL)
                 .border_style(self.border_style))
             .highlight_style(Style::default().bg(Color::Blue).fg(Color::White))

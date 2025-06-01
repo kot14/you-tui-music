@@ -6,7 +6,11 @@ use ratatui::{
 };
 use tokio::sync::mpsc::UnboundedSender;
 
-use crate::{action::Action, config::Config, tui::Event};
+use crate::{
+    action::{Action, ActionType},
+    config::Config,
+    tui::{Event, EventType},
+};
 
 pub mod fps;
 pub mod home;
@@ -27,8 +31,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<()>` - An Ok result or an error.
-    fn register_action_handler(&mut self, tx: UnboundedSender<Action>) -> Result<()> {
-        let _ = tx; // to appease clippy
+    fn register_action_handler(&mut self, _tx: UnboundedSender<Action>) -> Result<()> {
         Ok(())
     }
     /// Register a configuration handler that provides configuration settings if necessary.
@@ -40,8 +43,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<()>` - An Ok result or an error.
-    fn register_config_handler(&mut self, config: Config) -> Result<()> {
-        let _ = config; // to appease clippy
+    fn register_config_handler(&mut self, _config: Config) -> Result<()> {
         Ok(())
     }
     /// Initialize the component with a specified area if necessary.
@@ -53,8 +55,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<()>` - An Ok result or an error.
-    fn init(&mut self, area: Size) -> Result<()> {
-        let _ = area; // to appease clippy
+    fn init(&mut self, _area: Size) -> Result<()> {
         Ok(())
     }
     /// Handle incoming events and produce actions if necessary.
@@ -83,8 +84,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn handle_key_event(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        let _ = key; // to appease clippy
+    fn handle_key_event(&mut self, _key: KeyEvent) -> Result<Option<Action>> {
         Ok(None)
     }
     /// Handle mouse events and produce actions if necessary.
@@ -96,8 +96,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<Option<Action>> {
-        let _ = mouse; // to appease clippy
+    fn handle_mouse_event(&mut self, _mouse: MouseEvent) -> Result<Option<Action>> {
         Ok(None)
     }
     /// Update the state of the component based on a received action. (REQUIRED)
@@ -109,8 +108,7 @@ pub trait Component {
     /// # Returns
     ///
     /// * `Result<Option<Action>>` - An action to be processed or none.
-    fn update(&mut self, action: Action) -> Result<Option<Action>> {
-        let _ = action; // to appease clippy
+    fn update(&mut self, _action: Action) -> Result<Option<Action>> { // Parameter changed to _action
         Ok(None)
     }
     /// Render the component on the screen. (REQUIRED)
@@ -124,4 +122,16 @@ pub trait Component {
     ///
     /// * `Result<()>` - An Ok result or an error.
     fn draw(&mut self, frame: &mut Frame, area: Rect) -> Result<()>;
+
+    /// Returns a list of `ActionType` the component is interested in.
+    /// By default, it returns an empty vector, meaning the component is not interested in any actions.
+    fn interested_actions(&self) -> Vec<ActionType> {
+        vec![]
+    }
+
+    /// Returns a list of `EventType` the component is interested in.
+    /// By default, it returns an empty vector, meaning the component is not interested in any events.
+    fn interested_events(&self) -> Vec<EventType> {
+        vec![]
+    }
 }

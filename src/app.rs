@@ -1,15 +1,15 @@
 use color_eyre::Result;
 use crossterm::event::KeyEvent;
-use ratatui::prelude::Rect;
+use ratatui::{layout::Size, prelude::Rect}; // Added Size
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
 use tracing::{debug, info};
 
 use crate::{
-    action::Action,
-    components::{Component, fps::FpsCounter, home::Home,},
+    action::{Action, ActionType},
+    components::{Component, fps::FpsCounter, home::Home},
     config::Config,
-    tui::{Event, Tui},
+    tui::{Event, EventType, Tui},
 };
 
 pub struct App {
@@ -23,6 +23,8 @@ pub struct App {
     last_tick_key_events: Vec<KeyEvent>,
     action_tx: mpsc::UnboundedSender<Action>,
     action_rx: mpsc::UnboundedReceiver<Action>,
+    pub component_action_interests: Vec<Vec<ActionType>>,
+    pub component_event_interests: Vec<Vec<EventType>>,
 }
 
 #[derive(Default, Debug, Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -34,10 +36,21 @@ pub enum Mode {
 impl App {
     pub fn new(tick_rate: f64, frame_rate: f64) -> Result<Self> {
         let (action_tx, action_rx) = mpsc::unbounded_channel();
+        let components: Vec<Box<dyn Component>> =
+            vec![Box::new(Home::new()), Box::new(FpsCounter::default())];
+
+        let mut component_action_interests = Vec::new();
+        let mut component_event_interests = Vec::new();
+
+        for component in components.iter() {
+            component_action_interests.push(component.interested_actions());
+            component_event_interests.push(component.interested_events());
+        }
+
         Ok(Self {
             tick_rate,
             frame_rate,
-            components: vec![Box::new(Home::new()), Box::new(FpsCounter::default())],
+            components,
             should_quit: false,
             should_suspend: false,
             config: Config::new()?,
@@ -45,16 +58,12 @@ impl App {
             last_tick_key_events: Vec::new(),
             action_tx,
             action_rx,
+            component_action_interests,
+            component_event_interests,
         })
     }
 
-    pub async fn run(&mut self) -> Result<()> {
-        let mut tui = Tui::new()?
-            // .mouse(true) // uncomment this line to enable mouse support
-            .tick_rate(self.tick_rate)
-            .frame_rate(self.frame_rate);
-        tui.enter()?;
-
+    fn initialize_components(&mut self, tui_size: Size) -> Result<()> {
         for component in self.components.iter_mut() {
             component.register_action_handler(self.action_tx.clone())?;
         }
@@ -62,24 +71,38 @@ impl App {
             component.register_config_handler(self.config.clone())?;
         }
         for component in self.components.iter_mut() {
-            component.init(tui.size()?)?;
+            component.init(tui_size)?;
         }
+        Ok(())
+    }
 
-        let action_tx = self.action_tx.clone();
+    async fn main_loop(&mut self, tui: &mut Tui) -> Result<()> {
         loop {
-            self.handle_events(&mut tui).await?;
-            self.handle_actions(&mut tui)?;
+            self.handle_events(tui).await?;
+            self.handle_actions(tui)?;
             if self.should_suspend {
                 tui.suspend()?;
-                action_tx.send(Action::Resume)?;
-                action_tx.send(Action::ClearScreen)?;
-                // tui.mouse(true);
+                self.action_tx.send(Action::Resume)?;
+                self.action_tx.send(Action::ClearScreen)?;
                 tui.enter()?;
             } else if self.should_quit {
                 tui.stop()?;
                 break;
             }
         }
+        Ok(())
+    }
+
+    pub async fn run(&mut self) -> Result<()> {
+        let mut tui = Tui::new()?
+            .tick_rate(self.tick_rate)
+            .frame_rate(self.frame_rate);
+        tui.enter()?;
+
+        self.initialize_components(tui.size()?)?;
+
+        self.main_loop(&mut tui).await?;
+
         tui.exit()?;
         Ok(())
     }
@@ -97,9 +120,22 @@ impl App {
             Event::Key(key) => self.handle_key_event(key)?,
             _ => {}
         }
-        for component in self.components.iter_mut() {
-            if let Some(action) = component.handle_events(Some(event.clone()))? {
-                action_tx.send(action)?;
+
+        let current_event_type = event.get_type();
+
+        for (idx, component) in self.components.iter_mut().enumerate() {
+            let interests = self.component_event_interests.get(idx);
+
+            let should_handle = match interests {
+                Some(interest_list) if interest_list.is_empty() => true, // Empty list means interested in all
+                Some(interest_list) => interest_list.contains(&current_event_type),
+                None => true, // Should not happen, default to true (interested in all for safety)
+            };
+
+            if should_handle {
+                if let Some(action) = component.handle_events(Some(event.clone()))? {
+                    action_tx.send(action)?;
+                }
             }
         }
         Ok(())
@@ -140,17 +176,36 @@ impl App {
                     self.last_tick_key_events.drain(..);
                 }
                 Action::Quit => self.should_quit = true,
-                Action::Suspend => self.should_suspend = true,
-                Action::Resume => self.should_suspend = false,
+                Action::Suspend => {
+                    info!("Application suspended");
+                    self.should_suspend = true;
+                }
+                Action::Resume => {
+                    info!("Application resumed");
+                    self.should_suspend = false;
+                }
                 Action::ClearScreen => tui.terminal.clear()?,
                 Action::Resize(w, h) => self.handle_resize(tui, w, h)?,
                 Action::Render => self.render(tui)?,
                 _ => {}
             }
-            for component in self.components.iter_mut() {
-                if let Some(action) = component.update(action.clone())? {
-                    self.action_tx.send(action)?
+
+            let current_action_type = action.get_type();
+
+            for (idx, component) in self.components.iter_mut().enumerate() {
+                let interests = self.component_action_interests.get(idx);
+
+                let should_update = match interests {
+                    Some(interest_list) if interest_list.is_empty() => true, // Empty list means interested in all
+                    Some(interest_list) => interest_list.contains(&current_action_type),
+                    None => true, // Should not happen, default to true (interested in all for safety)
                 };
+
+                if should_update {
+                    if let Some(action) = component.update(action.clone())? {
+                        self.action_tx.send(action)?
+                    };
+                }
             }
         }
         Ok(())

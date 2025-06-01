@@ -1,10 +1,11 @@
+
 [package]
 name = "you-tui-music"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 description = "TUI for listening youtube music"
 authors = ["Yaroslav Mostovoy <mostovy.yaroslav.igorovich@gmail.com>"]
-build = "build.rs"
+# build = "build.rs" # Temporarily removed
 
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -46,4 +47,4 @@ symphonia = { version = "0.5", features = ["mp3", "flac", "wav", "vorbis", "aac"
 
 [build-dependencies]
 anyhow = "1.0.90"
-vergen-gix = { version = "1.0.2", features = ["build", "cargo"] }
+# vergen-gix = { version = "0.1.0", features = ["build", "cargo"] } # Temporarily removed due to MSRV issues

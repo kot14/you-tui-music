@@ -14,16 +14,13 @@ pub struct Cli {
     pub frame_rate: f64,
 }
 
-const VERSION_MESSAGE: &str = concat!(
-    env!("CARGO_PKG_VERSION"),
-    "-",
-    env!("VERGEN_GIT_DESCRIBE"),
-    " (",
-    env!("VERGEN_BUILD_DATE"),
-    ")"
-);
-
 pub fn version() -> String {
+    let pkg_version = env!("CARGO_PKG_VERSION");
+    let git_describe = option_env!("VERGEN_GIT_DESCRIBE").unwrap_or("unknown");
+    let build_date = option_env!("VERGEN_BUILD_DATE").unwrap_or("unknown");
+
+    let version_message = format!("{pkg_version}-{git_describe} ({build_date})");
+
     let author = clap::crate_authors!();
 
     // let current_exe_path = PathBuf::from(clap::crate_name!()).display().to_string();
@@ -32,7 +29,7 @@ pub fn version() -> String {
 
     format!(
         "\
-{VERSION_MESSAGE}
+{version_message}
 
 Authors: {author}
 

@@ -4,13 +4,13 @@ use std::sync::{Arc, Mutex};
 use rodio::{Decoder, OutputStream, OutputStreamHandle, Sink};
 use ratatui::{widgets::*, layout::*, style::*, text::*, Frame};
 
-pub struct Old_Player {
+pub struct OldPlayer { // Renamed from Old_Player
     sink: Option<Arc<Mutex<Sink>>>,
     _stream: OutputStream,
     stream_handle: OutputStreamHandle,
 }
 
-impl Old_Player {
+impl OldPlayer { // Renamed from Old_Player
     pub fn new() -> Self {
         let (_stream, stream_handle) = OutputStream::try_default().expect("Failed to init audio");
         Self {
@@ -38,13 +38,13 @@ impl Old_Player {
 
     pub fn draw(&self, frame: &mut Frame, area: Rect) {
         let info = Text::from(Line::from(vec![
-            Span::styled("🎵 Грає: ", Style::default().fg(Color::Green)),
+            Span::styled("🎵 Playing: ", Style::default().fg(Color::Green)), // Translated "Грає"
             Span::raw("Track Name – Artist"),
         ]));
 
         let paragraph = Paragraph::new(info)
             .alignment(Alignment::Center)
-            .block(Block::default().title("Плеєр").borders(Borders::ALL));
+            .block(Block::default().title("Player").borders(Borders::ALL)); // Translated "Плеєр"
 
         frame.render_widget(paragraph, area);
     }

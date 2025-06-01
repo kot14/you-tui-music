@@ -16,7 +16,7 @@ use std::time::{Duration, Instant};
 pub struct Player {
    command_tx: Option<UnboundedSender<Action>>,
     config: Config,
-    current_track: Option<(String, String)>, // Назва, автор
+    current_track: Option<(String, String)>, // Title, author
     volume: f32,
     position: Duration,
     duration: Duration,
@@ -43,7 +43,7 @@ impl Player {
         Self {
             command_tx: None,
             config: Config::default(),
-            current_track: Some(("Невідомий трек".to_string(), "Невідомий автор".to_string())),
+            current_track: Some(("Unknown Track".to_string(), "Unknown Author".to_string())), // Translated
             volume: 0.5,
             position: Duration::from_secs(0),
             duration: Duration::from_secs(0),
@@ -55,7 +55,7 @@ impl Player {
     }
 
         fn render_player(&self, frame: &mut Frame, area: Rect) {
-        let (title, artist) = self.current_track.clone().unwrap_or_else(|| ("Невідомо".into(), "Невідомо".into()));
+        let (title, artist) = self.current_track.clone().unwrap_or_else(|| ("Unknown".into(), "Unknown".into())); // Translated
         let position_secs = self.position.as_secs();
         let duration_secs = self.duration.as_secs();
         let remaining_secs = duration_secs.saturating_sub(position_secs);
@@ -87,7 +87,7 @@ impl Player {
         let paragraph = Paragraph::new(text)
             .alignment(Alignment::Center)
             .block(Block::default()
-                .title("Плеєр")
+                .title("Player") // Translated "Плеєр"
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::LightBlue)));
 
@@ -126,15 +126,15 @@ let gauge = Gauge::default()
       
     }
     pub fn play_sample(&mut self, name: &str, ext: &str) {
-        // Створюємо шлях до файлу
+        // Creating path to file
         let path = format!("local_music/{}.{}", name, ext);
 
-        // Перевіряємо чи є вже Sink — якщо є, зупиняємо
+        // Checking if Sink already exists - if yes, stop
            if let Some(sink) = &self.sink {
-        // Зупиняємо поточний трек
+        // Stopping current track
         sink.lock().unwrap().stop();
 
-        // Формуємо шлях до файлу
+        // Forming path to file
         let path = format!("./local_music/{}.{}", name, ext);
         if let Ok(file) = File::open(&path) {
             let source = Decoder::new(BufReader::new(file));
@@ -142,18 +142,18 @@ let gauge = Gauge::default()
                 let duration = source.total_duration().unwrap_or(Duration::from_secs(0));
                 sink.lock().unwrap().append(source);
 
-                // Оновлюємо внутрішній стан
-                self.current_track = Some((name.to_string(), "Невідомий автор".to_string())); // заміни "Невідомий автор", якщо можеш витягти
+                // Updating internal state
+                self.current_track = Some((name.to_string(), "Unknown Author".to_string())); // Translated, original comment: replace "Unknown Author" if you can extract
                 self.position = Duration::from_secs(0);
                 self.duration = duration;
                 self.playback_start_time = Some(Instant::now());
             }
         } else {
-            eprintln!("Не вдалося відкрити файл: {}", path);
+            eprintln!("Failed to open file: {}", path); // Translated
         }
     }
 
-        // Створюємо новий Sink
+        // Creating new Sink
         if let Some(handle) = &self.stream_handle {
             if let Ok(new_sink) = Sink::try_new(handle) {
                 if let Ok(file) = File::open(&path) {
@@ -162,16 +162,16 @@ let gauge = Gauge::default()
                         new_sink.append(source);
                         self.sink = Some(Arc::new(Mutex::new(new_sink)));
                     } else {
-                        eprintln!("❌ Не вдалося декодувати: {}", path);
+                        eprintln!("❌ Failed to decode: {}", path); // Translated
                     }
                 } else {
-                    eprintln!("❌ Не вдалося відкрити: {}", path);
+                    eprintln!("❌ Failed to open: {}", path); // Translated
                 }
             } else {
-                eprintln!("❌ Не вдалося створити Sink");
+                eprintln!("❌ Failed to create Sink"); // Translated
             }
         } else {
-            eprintln!("❌ Відсутній stream_handle");
+            eprintln!("❌ stream_handle is missing"); // Translated
         }
     }
 }
@@ -197,7 +197,7 @@ impl Component for Player {
 }
             }
             Action::Render => {
-                // наприклад, запускати звук якщо потрібно
+                // e.g., start sound if needed
             }
             _ => {}
         }

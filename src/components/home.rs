@@ -53,9 +53,9 @@ impl Home {
             selected_index: 0,
             selected_song_index: 0,
             list_items: vec![
-                ListItem::new(" Тренди"),
-                ListItem::new(" Улюблені"),
-                ListItem::new(" Списки відтворення"),
+                ListItem::new(" Trends"), // Translated "Тренди"
+                ListItem::new(" Favorites"), // Translated "Улюблені"
+                ListItem::new(" Playlists"), // Translated "Списки відтворення"
             ],
             song_items: list,
             ..Default::default()
@@ -81,14 +81,14 @@ pub fn get_audio_files(path: &str) -> io::Result<Vec<(String, String, u64)>> {
         let entry = entry?;
         let path = entry.path();
 
-        // Перевірка на розширення
+        // Check for extension
         let ext = path
             .extension()
             .and_then(|e| e.to_str())
             .unwrap_or("")
             .to_lowercase();
 
-        // Підтримувані формати
+        // Supported formats
         let supported = ["mp3", "flac", "wav", "aac", "m4a"];
 
         if !supported.contains(&ext.as_str()) {
@@ -119,7 +119,7 @@ pub fn get_audio_files(path: &str) -> io::Result<Vec<(String, String, u64)>> {
             .make(&track.codec_params, &DecoderOptions::default())
             .map_err(|_| io::Error::new(io::ErrorKind::Other, "Failed to create decoder"))?;
 
-        // Отримуємо тривалість
+        // Getting duration
         let duration = if let (Some(frames), Some(rate)) =
             (track.codec_params.n_frames, track.codec_params.sample_rate)
         {
@@ -194,7 +194,7 @@ fn handle_list_navigation(&mut self, code: KeyCode) {
 
         let list = List::new(self.list_items.clone())
             .block(Block::default()
-                .title("Список")
+                .title("List") // Translated "Список"
                 .borders(Borders::ALL)
                 .border_style(self.border_style(0)))
             .highlight_style(Style::default().bg(Color::Blue).fg(Color::White))
@@ -209,13 +209,13 @@ fn render_song_list(&self, frame: &mut Frame, area: Rect) {
 
     let items: Vec<ListItem> = self.song_items.iter().map(|(title, ext, duration)| {
         let song_duration = self.format_duration(duration);
-        let left = format!("{}.{:<4}", title, ext); // назва + розширення
+        let left = format!("{}.{:<4}", title, ext); // name + extension
         let right = song_duration;
 
-        // Загальна довжина без пробілів
+        // Total length without spaces
         let total_len = left.len() + right.len();
         let space = if area_width > total_len {
-            area_width - total_len - 4 // залишаємо трохи місця на "➤ " та рамки
+            area_width - total_len - 4 // leave a little space for "➤ " and borders
         } else {
             1
         };
@@ -236,7 +236,7 @@ fn render_song_list(&self, frame: &mut Frame, area: Rect) {
     let list = List::new(items)
         .block(
             Block::default()
-                .title("Пісні")
+                .title("Songs") // Translated "Пісні"
                 .borders(Borders::ALL)
                 .border_style(self.border_style(1)),
         )

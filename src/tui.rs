@@ -42,6 +42,41 @@ pub enum Event {
     Resize(u16, u16),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum EventType {
+    Init,
+    Quit,
+    Error,
+    Closed,
+    Tick,
+    Render,
+    FocusGained,
+    FocusLost,
+    Paste,
+    Key,
+    Mouse,
+    Resize,
+}
+
+impl Event {
+    pub fn get_type(&self) -> EventType {
+        match self {
+            Event::Init => EventType::Init,
+            Event::Quit => EventType::Quit,
+            Event::Error => EventType::Error,
+            Event::Closed => EventType::Closed,
+            Event::Tick => EventType::Tick,
+            Event::Render => EventType::Render,
+            Event::FocusGained => EventType::FocusGained,
+            Event::FocusLost => EventType::FocusLost,
+            Event::Paste(_) => EventType::Paste,
+            Event::Key(_) => EventType::Key,
+            Event::Mouse(_) => EventType::Mouse,
+            Event::Resize(_, _) => EventType::Resize,
+        }
+    }
+}
+
 pub struct Tui {
     pub terminal: ratatui::Terminal<Backend<Stdout>>,
     pub task: JoinHandle<()>,
