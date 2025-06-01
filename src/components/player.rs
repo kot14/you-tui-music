@@ -17,6 +17,7 @@ pub struct Player {
    command_tx: Option<UnboundedSender<Action>>,
     config: Config,
     current_track: Option<(String, String)>, // Назва, автор
+    volume: f32,
     position: Duration,
     duration: Duration,
     playback_start_time: Option<Instant>,
@@ -27,7 +28,7 @@ pub struct Player {
 
 impl Player {
     pub fn new() -> Self {
-        // Спроба ініціалізувати Rodio
+        
         let (_stream, stream_handle) = match OutputStream::try_default() {
             Ok((s, h)) => (Some(s), Some(h)),
             Err(_) => (None, None),
@@ -43,6 +44,7 @@ impl Player {
             command_tx: None,
             config: Config::default(),
             current_track: Some(("Невідомий трек".to_string(), "Невідомий автор".to_string())),
+            volume: 0.5,
             position: Duration::from_secs(0),
             duration: Duration::from_secs(0),
             playback_start_time: None,
@@ -111,7 +113,18 @@ let gauge = Gauge::default()
         frame.render_widget(gauge, gauge_area);
     }
 
-    /// Приклад: відтворити простий звуковий файл
+    pub fn change_volume(&mut self, action: bool) {
+        if action {
+            if self.volume < 1.0 {
+                self.volume += 0.1
+            } else {
+               if self.volume >= 0.1 {
+                 self.volume -= 0.1
+               }
+            }
+        }
+      
+    }
     pub fn play_sample(&mut self, name: &str, ext: &str) {
         // Створюємо шлях до файлу
         let path = format!("local_music/{}.{}", name, ext);
@@ -133,7 +146,7 @@ let gauge = Gauge::default()
                 self.current_track = Some((name.to_string(), "Невідомий автор".to_string())); // заміни "Невідомий автор", якщо можеш витягти
                 self.position = Duration::from_secs(0);
                 self.duration = duration;
-                self.playback_start_time = Some(Instant::now()); 
+                self.playback_start_time = Some(Instant::now());
             }
         } else {
             eprintln!("Не вдалося відкрити файл: {}", path);

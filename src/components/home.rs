@@ -151,19 +151,42 @@ pub fn get_audio_files(path: &str) -> io::Result<Vec<(String, String, u64)>> {
         format!("{:02}:{:02}", minutes, seconds)
     }
 
-    fn handle_list_navigation(&mut self, code: KeyCode) {
-        let (index, max) = match self.selected_widget {
-            0 => (&mut self.selected_index, self.list_items.len()),
-            1 => (&mut self.selected_song_index, self.song_items.len()),
-            _ => return,
-        };
-
-        match code {
-            KeyCode::Up if *index > 0 => *index -= 1,
-            KeyCode::Down if *index + 1 < max => *index += 1,
-            _ => {}
+fn handle_list_navigation(&mut self, code: KeyCode) {
+    match self.selected_widget {
+        0 => {
+            let max = self.list_items.len();
+            if let KeyCode::Up = code {
+                if self.selected_index > 0 {
+                    self.selected_index -= 1;
+                }
+            } else if let KeyCode::Down = code {
+                if self.selected_index + 1 < max {
+                    self.selected_index += 1;
+                }
+            }
         }
+        1 => {
+            let max = self.song_items.len();
+            if let KeyCode::Up = code {
+                if self.selected_song_index > 0 {
+                    self.selected_song_index -= 1;
+                }
+            } else if let KeyCode::Down = code {
+                if self.selected_song_index + 1 < max {
+                    self.selected_song_index += 1;
+                }
+            }
+        }
+        2 => {
+            match code {
+                KeyCode::Up => self.player.change_volume(true),
+                KeyCode::Down => self.player.change_volume(false),
+                _ => {}
+            }
+        }
+        _ => {}
     }
+}
 
     fn render_list(&self, frame: &mut Frame, area: Rect) {
         let mut state = ListState::default();
@@ -222,51 +245,7 @@ fn render_song_list(&self, frame: &mut Frame, area: Rect) {
 
     frame.render_stateful_widget(list, area, &mut state);
 }
-    // fn render_player(&self, frame: &mut Frame, area: Rect) {
-    //     let text = Text::from(vec![
-    //         Line::from(vec![
-    //             Span::raw("Playing (pavilion "),
-    //             Span::raw(" | Shuffle: On "),
-    //             Span::raw(" | Repeat: Off "),
-    //             Span::raw(" | Volume: 98%)"),
-    //         ]),
-    //         Line::from(""),
-    //         Line::from(vec![
-    //             Span::styled("Truck", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
-    //         ]),
-    //         Line::from(""),
-    //         Line::from("Hovvdy"),
-    //         Line::from(""),
-    //         Line::from(vec![
-    //             Span::styled("0:38", Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC)),
-    //             Span::styled("/3:59", Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC)),
-    //             Span::styled(" (-3:20)", Style::default().fg(Color::Yellow).add_modifier(Modifier::ITALIC)),
-    //         ]),
-    //     ]);
 
-    //     let paragraph = Paragraph::new(text)
-    //         .alignment(Alignment::Center)
-    //         .block(Block::default()
-    //             .title("Плеєр")
-    //             .borders(Borders::ALL)
-    //             .border_style(Style::default().fg(Color::LightBlue)));
-
-    //     frame.render_widget(paragraph, area);
-
-    //     let gauge_area = Rect {
-    //         x: area.x + 1,
-    //         y: area.y,
-    //         width: area.width - 2,
-    //         height: 1,
-    //     };
-
-    //     let progress = 38 * 100 / 239; // 0:38 із 3:59
-    //     let gauge = Gauge::default()
-    //         .gauge_style(Style::default().fg(Color::Yellow))
-    //         .ratio(progress as f64 / 100.0);
-
-    //     frame.render_widget(gauge, gauge_area);
-    // }
 }
 
 impl Component for Home {

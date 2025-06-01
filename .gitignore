@@ -2,4 +2,4 @@
 .data/*.log
 /.github
 Cargo.lock
-/local_music
+/local_music/*
