@@ -14,7 +14,9 @@ pub enum Action {
     Key(crossterm::event::KeyEvent),
     Noop,
     Help,
-    PressTab, 
+    PressTab,
+    VolumeUp,
+    VolumeDown,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -31,6 +33,8 @@ pub enum ActionType {
     Noop,
     Help,
     PressTab,
+    VolumeUp,
+    VolumeDown,
 }
 
 impl Action {
@@ -48,6 +52,8 @@ impl Action {
             Action::Noop => ActionType::Noop,
             Action::Help => ActionType::Help,
             Action::PressTab => ActionType::PressTab,
+            Action::VolumeUp => ActionType::VolumeUp,
+            Action::VolumeDown => ActionType::VolumeDown,
         }
     }
 }

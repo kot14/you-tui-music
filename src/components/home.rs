@@ -177,11 +177,17 @@ fn handle_list_navigation(&mut self, code: KeyCode) {
                 }
             }
         }
-        2 => {
-            match code {
-                KeyCode::Up => self.player.change_volume(true),
-                KeyCode::Down => self.player.change_volume(false),
-                _ => {}
+        2 => { // Player widget - now sends actions for volume
+            if let Some(tx) = &self.command_tx {
+                match code {
+                    KeyCode::Up => {
+                        let _ = tx.send(Action::VolumeUp);
+                    }
+                    KeyCode::Down => {
+                        let _ = tx.send(Action::VolumeDown);
+                    }
+                    _ => {}
+                }
             }
         }
         _ => {}
